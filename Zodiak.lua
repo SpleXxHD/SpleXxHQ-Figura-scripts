@@ -1,150 +1,83 @@
-if host:isHost() then  
-local files = listFiles("", true)
+if not host:isHost() then return end
+
+-- Подключаем модуль Promise
 local Promise_module
-
-for _, file in ipairs(files) do
-    -- ищем SquAPI
-    if not Promise_module and string.find(file, "Promise") then
+for _, file in ipairs(listFiles("", true)) do
+    if string.find(file, "Promise") then
         Promise_module = file:gsub("%.lua$", ""):gsub("[/\\]", ".")
-    end
-
-    -- если оба найдены — можно выйти
-    if Promise_module then
         break
     end
 end
-
--- если хотя бы один модуль не найден — выходим
-if not (Promise_module) then
-    return
-end
-
-
--- подключаем найденный модуль
+if not Promise_module then return end
 local Promise = require(Promise_module)
-
 
 -- Настройки
 local searchNick = "Temp"
-local Role1 = ""
-
 local roleNames = {
     ["1384918844262453318"] = '[{"text":"З!одиа!к","color":"#9b2226"}]',
     ["1392122819290071120"] = '[{"text":"Аркана","color":"#bb3e03"}]',
     ["1386034227321241683"] = '[{"text":"Созвездие","color":"#ca6702"}]',
-    ["1384918146053570570"] = '[{"text":"Звезда","color":"#ee9b00"}]',
+    ["1384918146053570570"] = '[{"text":"Звезда","color":"#ee9b00"}]'
 }
 
 local function getRoleIndex(roleId)
     local index = 1
-    for id, _ in pairs(roleNames) do
-        if id == roleId then
-            return index
-        end
+    for id in pairs(roleNames) do
+        if id == roleId then return index end
         index = index + 1
     end
     return math.huge
 end
 
 local function wrapRoleWithNick(roleJson, nick)
-    local roleTable = {}
+    local wrapped = {string.format('{"text":"> %s ","color":"#C0C0C0"}', nick)}
     for text, color in roleJson:gmatch('"text":"(.-)".-"color":"(.-)"') do
-        table.insert(roleTable, {text=text, color=color})
+        table.insert(wrapped, string.format('{"text":"%s","color":"%s"}', text, color))
     end
-
-    local wrapped = {}
-    table.insert(wrapped, {text="> "..nick.." ", color="#C0C0C0"})
-    for _, item in ipairs(roleTable) do
-        table.insert(wrapped, item)
-    end
-    table.insert(wrapped, {text=" <", color="#C0C0C0"})
-
-    local parts = {}
-    for _, item in ipairs(wrapped) do
-        table.insert(parts, string.format('{"text":"%s","color":"%s"}', item.text, item.color))
-    end
-    return "[" .. table.concat(parts, ",") .. "]"
+    table.insert(wrapped, '{"text":" <","color":"#C0C0C0"}')
+    return "[" .. table.concat(wrapped, ",") .. "]"
 end
 
-local tickCounter = 0
-local lastRole = '[{"text":"> '..searchNick..' <","color":"#C0C0C0"}]'
-local isRequesting = false -- флаг, что запрос в процессе
+local lastRole = wrapRoleWithNick("", searchNick)
+local isRequesting = false
 
-function events.mouse_press(button, action, modifier)
+function events.mouse_press(button)
     if button == 1 then
-        local targeted = player:getTargetedEntity(3)
-        if targeted ~= nil and targeted:isPlayer() then
+        local target = player:getTargetedEntity(3)
+        if target and target:isPlayer() then
+            searchNick = target:getName()
+            lastRole = wrapRoleWithNick("", searchNick)
             pings.Search()
-            Role1 = ""
-            searchNick = ""
-            searchNick = targeted:getName()
-            lastRole = ""
         end
     end
 end
 
 function pings.Search()
-    -- Если запрос уже идет, ничего не делаем
     if isRequesting then return end
-
-
-    -- Отправляем запрос
     isRequesting = true
-    local url = "https://splexxhqfig.splexxhqfig.workers.dev/"
-    local req = net.http:request(url)
-        :method("GET")
 
-    Promise.await(req:send())
+    Promise.await(net.http:request("https://splexxhqfig.splexxhqfig.workers.dev/"):method("GET"):send())
         :thenString(function(response)
-            local users = {}
-            for userStr in response:gmatch('{(.-)}') do
-                local user = {}
-                user.nick = userStr:match('"nick":"(.-)"')
-                user.username = userStr:match('"username":"(.-)"')
-                user.roles = {}
-                for role in userStr:gmatch('"roles":%s*%[(.-)%]') do
-                    for r in role:gmatch('"(%d+)"') do
-                        table.insert(user.roles, r)
-                    end
-                end
-                table.insert(users, user)
-            end
-
-            local found = false
             local searchLower = searchNick:lower()
-            for _, user in ipairs(users) do
-                if user.nick and user.nick:lower():find(searchLower, 1, true) then
-                    local filteredRoles = {}
-                    for _, roleId in ipairs(user.roles) do
-                        if roleNames[roleId] then
-                            table.insert(filteredRoles, roleId)
+            for userStr in response:gmatch('{(.-)}') do
+                local nick = userStr:match('"nick":"(.-)"')
+                if nick and nick:lower():find(searchLower, 1, true) then
+                    local roles = {}
+                    for role in userStr:gmatch('"roles":%s*%[(.-)%]') do
+                        for r in role:gmatch('"(%d+)"') do
+                            if roleNames[r] then table.insert(roles, r) end
                         end
                     end
-                    table.sort(filteredRoles, function(a, b)
-                        return getRoleIndex(a) < getRoleIndex(b)
-                    end)
-
-                    local highestRole = filteredRoles[1] and roleNames[filteredRoles[1]] or nil
-                    if highestRole then
-                        lastRole = wrapRoleWithNick(highestRole, searchNick)
-                    end
-                    found = true
+                    table.sort(roles, function(a,b) return getRoleIndex(a) < getRoleIndex(b) end)
+                    if roles[1] then lastRole = wrapRoleWithNick(roleNames[roles[1]], searchNick) end
                     break
                 end
             end
-
-            -- Только здесь обновляем actionbar
-            if lastRole ~= "" then 
-                host:setActionbar(lastRole)
-            end
-                isRequesting = false
-        end)
-        :catch(function(err)
-            -- Ошибка запроса — оставляем lastRole без изменений
-            if lastRole ~= "" then
             host:setActionbar(lastRole)
-            end
             isRequesting = false
         end)
-end
+        :catch(function()
+            host:setActionbar(lastRole)
+            isRequesting = false
+        end)
 end
