@@ -9,7 +9,7 @@ end
 -- Загружаем Promise
 local Promise = load("Promise")
 
-
+log("Zodiak")
 -- Настройки
 local searchNick = "Temp"
 local Role1 = ""
