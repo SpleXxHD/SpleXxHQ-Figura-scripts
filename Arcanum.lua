@@ -50,7 +50,7 @@ if host:isHost() then
         return math.huge
     end
 
-    local lastRole = '[{"text":"> '..searchNick..' <","color":"#C0C0C0"}]'
+    local lastRole = '[{"text":"> ","color":"#C0C0C0"},{"text":"'..searchNick..'","color":"#FFFFFF"},{"text":" <","color":"#C0C0C0"}]'
 
     -- КЛИК ПО ИГРОКУ
     function events.mouse_press(button, action, modifier)
@@ -66,7 +66,6 @@ if host:isHost() then
     end
 
     -- SPM РОЛИ
-    local Names = client.getTabList().players
     local UUIDandRoles = {}
 
     function pings.RoleSPm()
@@ -132,13 +131,13 @@ if host:isHost() then
 
                     if highestRole then
                         lastRole = string.format(
-                            '[{"text":"> %s | ","color":"#C0C0C0"},%s,{"text":" <","color":"#C0C0C0"}]',
+                            '[{"text":"> ","color":"#C0C0C0"},{"text":"%s","color":"#FFFFFF"},{"text":" | ","color":"#C0C0C0"},%s,{"text":" <","color":"#C0C0C0"}]',
                             searchNick,
                             highestRole:sub(2, -2)
                         )
                     else
                         lastRole = string.format(
-                            '[{"text":"> %s | Роль не найдена <","color":"#C0C0C0"}]',
+                            '[{"text":"> ","color":"#C0C0C0"},{"text":"%s","color":"#FFFFFF"},{"text":" | Роль не найдена <","color":"#C0C0C0"}]',
                             searchNick
                         )
                     end
@@ -151,7 +150,7 @@ if host:isHost() then
             -- FALLBACK SPM
             if not found and UUID and UUIDandRoles[UUID] then
                 lastRole = string.format(
-                    '[{"text":"> %s | ","color":"#C0C0C0"},{"text":"%s","color":"#ee9b00"},{"text":" <","color":"#C0C0C0"}]',
+                    '[{"text":"> ","color":"#C0C0C0"},{"text":"%s","color":"#FFFFFF"},{"text":" | ","color":"#C0C0C0"},{"text":"%s","color":"#ee9b00"},{"text":" <","color":"#C0C0C0"}]',
                     searchNick,
                     UUIDandRoles[UUID]
                 )
