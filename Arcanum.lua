@@ -142,7 +142,7 @@ if host:isHost() then
                         )
                     else
                         lastRole = string.format(
-                            '[{"text":"> ","color":"#C0C0C0"},{"text":"%s","color":"#FFFFFF"},{"text":" | Роль не найдена <","color":"#C0C0C0"}]',
+                            '[{"text":"> ","color":"#C0C0C0"},{"text":"%s","color":"#FFFFFF"},{"text":" <","color":"#C0C0C0"}]',
                             searchNick
                         )
                     end
