@@ -156,6 +156,7 @@ if host:isHost() then
                     searchNick, UUIDandRoles[UUID]
                 )
                 host:setActionbar(lastRole)
+                printJson(toJson({text="Кликни",click_event={action="open_url",url="https://ru.namemc.com/profile/"..UUID}}))
             end
 
             isRequesting = false
