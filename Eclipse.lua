@@ -5,7 +5,7 @@ __  __           _        _
 | |  | | (_| | (_| |  __/ | |_) | |_| |    
 |_|  |_|\__,_|\__,_|\___| |_.__/ \__, |    
  ____        _     __  __      _ |___/___  
-/ ___| _ __ | | ___\ \/ /__  _| | | |/ _ \ 
+/ ___| _ __ | | ___\ \/ /__  _| | | |/ _ \
 \___ \| '_ \| |/ _ \\  / \ \/ / |_| | | | |
  ___) | |_) | |  __//  \  >  <|  _  | |_| |
 |____/| .__/|_|\___/_/\_\/_/\_\_| |_|\__\_|
@@ -62,11 +62,15 @@ if host:isHost() then
     function events.mouse_press(button, action, modifier)
         if button == 1 then
             local targeted = player:getTargetedEntity(3)
+
             if targeted and targeted:isPlayer() then
                 searchNick = targeted:getName()
                 UUID = targeted:getUUID()
                 lastRole = ""
-                pings.Search()
+
+                local sneaking = player:isSneaking()
+
+                pings.Search(sneaking)
             end
         end
     end
@@ -78,8 +82,10 @@ if host:isHost() then
 
     function pings.RoleSPm()
         local link = "https://spmroles.maximpixel.dev"
+
         Promise.await(
-            net.http:request(link):method("GET"):send(), 1000
+            net.http:request(link):method("GET"):send(),
+            1000
         ):thenJson(function(data)
             UUIDandRoles = data["players"] or {}
         end)
@@ -90,7 +96,7 @@ if host:isHost() then
     -- ======================
     -- ПОИСК РОЛЕЙ
     -- ======================
-    function pings.Search()
+    function pings.Search(showNameMC)
         if isRequesting then return end
         isRequesting = true
 
@@ -99,16 +105,24 @@ if host:isHost() then
 
         Promise.await(req:send())
         :thenString(function(response)
+
             local users = {}
+
             for line in response:gmatch('"([^"]+)"') do
                 local nick, rolesStr = line:match("^%s*(.-)%s*=%s*(.*)$")
+
                 if nick then
-                    local user = { nick = nick, roles = {} }
+                    local user = {
+                        nick = nick,
+                        roles = {}
+                    }
+
                     if rolesStr and rolesStr ~= "no roles" then
                         for roleId in rolesStr:gmatch("(%d+)") do
                             table.insert(user.roles, roleId)
                         end
                     end
+
                     table.insert(users, user)
                 end
             end
@@ -121,6 +135,7 @@ if host:isHost() then
                     found = true
 
                     local filteredRoles = {}
+
                     for _, roleId in ipairs(user.roles) do
                         if roleNames[tostring(roleId)] then
                             table.insert(filteredRoles, tostring(roleId))
@@ -132,10 +147,12 @@ if host:isHost() then
                     end)
 
                     local highestRole = filteredRoles[1] and roleNames[filteredRoles[1]]
+
                     if highestRole then
                         lastRole = string.format(
                             '[{"text":"> ","color":"#C0C0C0"},{"text":"%s","color":"#FFFFFF"},{"text":" | ","color":"#C0C0C0"},%s,{"text":" <","color":"#C0C0C0"}]',
-                            searchNick, highestRole:sub(2, -2)
+                            searchNick,
+                            highestRole:sub(2, -2)
                         )
                     else
                         lastRole = string.format(
@@ -148,13 +165,27 @@ if host:isHost() then
                     break
                 end
             end
-            printJson(toJson({text="§b"..searchNick,click_event={action="open_url",url="https://ru.namemc.com/profile/"..UUID}}))
+
+            -- NameMC ссылка только если Shift был зажат в момент ПКМ
+            if showNameMC then
+                printJson(toJson({
+                    text = searchNick,
+                    color = "aqua",
+                    click_event = {
+                        action = "open_url",
+                        url = "https://ru.namemc.com/profile/" .. UUID
+                    }
+                }))
+            end
+
             -- FALLBACK SPM
             if not found and UUID and UUIDandRoles[UUID] then
                 lastRole = string.format(
                     '[{"text":"> ","color":"#C0C0C0"},{"text":"%s","color":"#FFFFFF"},{"text":" | ","color":"#C0C0C0"},{"text":"%s","color":"#ee9b00"},{"text":" <","color":"#C0C0C0"}]',
-                    searchNick, UUIDandRoles[UUID]
+                    searchNick,
+                    UUIDandRoles[UUID]
                 )
+
                 host:setActionbar(lastRole)
             end
 
@@ -165,4 +196,3 @@ if host:isHost() then
         end)
     end
 end
-
