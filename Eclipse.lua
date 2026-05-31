@@ -27,7 +27,7 @@ if host:isHost() then
     end
 
     -- Загрузка Promise
-    local Promise = loadHostOnly("GithubLoader/Promise")
+    local Promise = loadHostOnly("Libraries/Promise")
 
     -- ======================
     -- НАСТРОЙКИ
