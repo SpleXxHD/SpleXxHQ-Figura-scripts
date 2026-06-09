@@ -175,6 +175,14 @@ if host:isHost() then
                         action = "open_url",
                         url = "https://ru.namemc.com/profile/" .. UUID
                     }
+                })
+                toJson({
+                    text = searchNick,
+                    color = "aqua",
+                    click_event = {
+                        action = "open_url",
+                        url = "https://spworlds.ru/spm/users/" .. searchNick
+                    }
                 }))
             end
 
