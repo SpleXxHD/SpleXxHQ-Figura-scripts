@@ -168,22 +168,25 @@ if host:isHost() then
 
             -- NameMC ссылка только если Shift был зажат в момент ПКМ
             if showNameMC then
-                printJson(toJson({
-                    text = searchNick,
-                    color = "aqua",
-                    click_event = {
-                        action = "open_url",
-                        url = "https://ru.namemc.com/profile/" .. UUID
-                    }
-                })
-                toJson({
-                    text = searchNick,
-                    color = "aqua",
-                    click_event = {
-                        action = "open_url",
-                        url = "https://spworlds.ru/spm/users/" .. searchNick
-                    }
-                }))
+                printJson(
+                    toJson({text = searchNick .. " ", color = "aqua",}),
+                    toJson({text = "( ", color = "gray",}),
+                    toJson({text = "NameMC", color = "gold",
+                        click_event = {
+                            action = "open_url",
+                            url = "https://ru.namemc.com/profile/" .. UUID
+                        }
+                    }),
+                    toJson({text = " | ", color = "gray"}),
+                    toJson({
+                        text = "SPm", color = "gold",
+                        click_event = {
+                            action = "open_url",
+                            url = "https://spworlds.ru/spm/users/" .. searchNick
+                        }
+                    }),
+                    toJson({text = " )", color = "gray",})
+                )
             end
 
             -- FALLBACK SPM
